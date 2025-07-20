@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>AI Galaxy Shooter</title>
+    <title>AI Galaxy Shooter (Autofire)</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
@@ -107,9 +107,9 @@
             background-color: rgba(51, 255, 51, 0.4);
             color: #fff;
             border: 2px solid #33ff33;
-            width: 70px;
-            height: 70px;
-            font-size: 1.5rem;
+            width: 80px;
+            height: 80px;
+            font-size: 2rem;
             cursor: pointer;
             border-radius: 50%;
             transition: all 0.1s ease-in-out;
@@ -124,12 +124,6 @@
             color: #000;
             transform: scale(0.95);
             box-shadow: 0 0 15px #fff;
-        }
-        #shootButton {
-            width: 90px;
-            height: 90px;
-            font-size: 1rem;
-            font-weight: bold;
         }
         /* Media query to show controls on touch devices / small screens */
         @media (hover: none) and (pointer: coarse), (max-width: 768px) {
@@ -158,7 +152,6 @@
     <canvas id="gameCanvas"></canvas>
     <div id="mobileControls" class="mobile-controls">
         <button id="moveLeftButton">&lt;</button>
-        <button id="shootButton">FIRE</button>
         <button id="moveRightButton">&gt;</button>
     </div>
 </div>
@@ -166,8 +159,8 @@
 <div id="startModal" class="modal">
     <h2>AI GALAXY SHOOTER</h2>
     <p>The galaxy is under attack by an intelligent alien swarm!</p>
-    <p class="keyboard-instructions">Use LEFT/RIGHT arrow keys to move.<br>Press SPACEBAR to shoot.</p>
-    <p class="touch-instructions" style="display: none;">Use the on-screen controls to play.</p>
+    <p class="keyboard-instructions">Use LEFT/RIGHT arrow keys to move.<br>Firing is automatic!</p>
+    <p class="touch-instructions" style="display: none;">Use the on-screen controls to move.<br>Firing is automatic!</p>
     <button id="startButton">Start Game</button>
 </div>
 
@@ -192,9 +185,6 @@
     const gameOverTitleEl = document.getElementById('gameOverTitle');
     const moveLeftButton = document.getElementById('moveLeftButton');
     const moveRightButton = document.getElementById('moveRightButton');
-    const shootButton = document.getElementById('shootButton');
-    const touchInstructions = document.querySelector('.touch-instructions');
-    const keyboardInstructions = document.querySelector('.keyboard-instructions');
 
     // --- Game Configuration ---
     let canvasWidth = 800;
@@ -334,14 +324,27 @@
             });
         }
     }
+    
+    // --- Autofire Logic ---
+    function playerShoot() {
+        if (!gameRunning || !canShoot) return;
+        createProjectile(player.x + player.width / 2 - 2.5, player.y, '#33ffcc', projectileSpeed);
+        canShoot = false;
+        setTimeout(() => canShoot = true, 400); // Cooldown for autofire
+    }
 
     // --- Game Loop ---
     function update() {
         if (!gameRunning) return;
         ctx.shadowBlur = 0;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
         player.update();
         player.draw();
+        
+        // Autofire is called every frame, cooldown is handled in playerShoot()
+        playerShoot();
+        
         projectiles.forEach((p, i) => { p.update(); p.draw(); if (p.y < 0) projectiles.splice(i, 1); });
         enemyProjectiles.forEach((p, i) => { p.update(); p.draw(); if (p.y > canvas.height) enemyProjectiles.splice(i, 1); });
         
@@ -420,18 +423,10 @@
     }
 
     // --- Event Listeners ---
-    function playerShoot() {
-        if (!gameRunning || !canShoot) return;
-        createProjectile(player.x + player.width / 2 - 2.5, player.y, '#33ffcc', projectileSpeed);
-        canShoot = false;
-        setTimeout(() => canShoot = true, 300);
-    }
-
     document.addEventListener('keydown', e => {
         if (!gameRunning) return;
         if (e.key === 'ArrowRight' || e.key === 'd') player.dx = player.speed;
         else if (e.key === 'ArrowLeft' || e.key === 'a') player.dx = -player.speed;
-        else if (e.key === ' ') playerShoot();
     });
     document.addEventListener('keyup', e => {
         if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'ArrowLeft' || e.key === 'a') player.dx = 0;
@@ -441,7 +436,6 @@
     ['mousedown', 'touchstart'].forEach(evt => {
         moveLeftButton.addEventListener(evt, e => { e.preventDefault(); if (gameRunning) player.dx = -player.speed; });
         moveRightButton.addEventListener(evt, e => { e.preventDefault(); if (gameRunning) player.dx = player.speed; });
-        shootButton.addEventListener(evt, e => { e.preventDefault(); playerShoot(); });
     });
     ['mouseup', 'mouseleave', 'touchend'].forEach(evt => {
         moveLeftButton.addEventListener(evt, e => { e.preventDefault(); if (gameRunning) player.dx = 0; });
