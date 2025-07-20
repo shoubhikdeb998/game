@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>AI Galaxy Shooter</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Press Start 2P', cursive;
+            background-color: #0a0a0a;
+            color: #ffffff;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            -webkit-user-select: none; /* Safari */
+            -ms-user-select: none; /* IE 10+ */
+            user-select: none; /* Standard syntax */
+        }
+        canvas {
+            background: #000 url('data:image/svg+xml,%3Csvg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="%231a1a1a" fill-opacity="0.4"%3E%3Ccircle cx="50" cy="50" r="1"/%3E%3Ccircle cx="10" cy="10" r="1"/%3E%3Ccircle cx="90" cy="90" r="1"/%3E%3Ccircle cx="10" cy="90" r="1"/%3E%3Ccircle cx="90" cy="10" r="1"/%3E%3Ccircle cx="30" cy="70" r="1"/%3E%3Ccircle cx="70" cy="30" r="1"/%3E%3Ccircle cx="50" cy="10" r="1"/%3E%3Ccircle cx="10" cy="50" r="1"/%3E%3Ccircle cx="90" cy="50" r="1"/%3E%3Ccircle cx="50" cy="90" r="1"/%3E%3C/g%3E%3C/svg%3E');
+            display: block;
+            border: 2px solid #33ff33;
+            box-shadow: 0 0 20px #33ff33, inset 0 0 15px rgba(51, 255, 51, 0.5);
+            border-radius: 8px;
+        }
+        .game-container {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+        .info-bar {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            padding: 0 1rem;
+            font-size: 1rem;
+            color: #33ff33;
+            text-shadow: 0 0 5px #33ff33;
+        }
+        .modal {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.85);
+            border: 2px solid #33ff33;
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            box-shadow: 0 0 20px #33ff33;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            z-index: 200;
+        }
+        .modal h2 {
+            font-size: 2rem;
+            color: #33ff33;
+            text-shadow: 0 0 10px #33ff33;
+            margin-bottom: 1rem;
+        }
+        .modal p {
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+        .modal button {
+            font-family: 'Press Start 2P', cursive;
+            background-color: #33ff33;
+            color: #000;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 0 10px #33ff33;
+        }
+        .modal button:hover {
+            background-color: #fff;
+            color: #000;
+            box-shadow: 0 0 20px #fff;
+        }
+        .mobile-controls {
+            display: none; /* Hidden by default on desktop */
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            width: 100%;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 5%;
+            box-sizing: border-box;
+            z-index: 100;
+        }
+        .mobile-controls button {
+            font-family: 'Press Start 2P', cursive;
+            background-color: rgba(51, 255, 51, 0.4);
+            color: #fff;
+            border: 2px solid #33ff33;
+            width: 70px;
+            height: 70px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            border-radius: 50%;
+            transition: all 0.1s ease-in-out;
+            box-shadow: 0 0 8px #33ff33;
+            -webkit-tap-highlight-color: transparent; /* Remove tap highlight on mobile */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .mobile-controls button:active {
+            background-color: #fff;
+            color: #000;
+            transform: scale(0.95);
+            box-shadow: 0 0 15px #fff;
+        }
+        #shootButton {
+            width: 90px;
+            height: 90px;
+            font-size: 1rem;
+            font-weight: bold;
+        }
+        /* Media query to show controls on touch devices / small screens */
+        @media (hover: none) and (pointer: coarse), (max-width: 768px) {
+            .mobile-controls {
+                display: flex;
+            }
+            .keyboard-instructions {
+                display: none;
+            }
+            .touch-instructions {
+                display: block !important;
+            }
+             .modal p {
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="game-container">
+    <div id="info-bar" class="info-bar">
+        <span id="score">SCORE: 0</span>
+        <span id="lives">LIVES: 3</span>
+    </div>
+    <canvas id="gameCanvas"></canvas>
+    <div id="mobileControls" class="mobile-controls">
+        <button id="moveLeftButton">&lt;</button>
+        <button id="shootButton">FIRE</button>
+        <button id="moveRightButton">&gt;</button>
+    </div>
+</div>
+
+<div id="startModal" class="modal">
+    <h2>AI GALAXY SHOOTER</h2>
+    <p>The galaxy is under attack by an intelligent alien swarm!</p>
+    <p class="keyboard-instructions">Use LEFT/RIGHT arrow keys to move.<br>Press SPACEBAR to shoot.</p>
+    <p class="touch-instructions" style="display: none;">Use the on-screen controls to play.</p>
+    <button id="startButton">Start Game</button>
+</div>
+
+<div id="gameOverModal" class="modal" style="display: none;">
+    <h2 id="gameOverTitle">GAME OVER</h2>
+    <p>Your final score: <span id="finalScore">0</span></p>
+    <button id="restartButton">Play Again</button>
+</div>
+
+
+<script>
+    // --- DOM Elements ---
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreEl = document.getElementById('score');
+    const livesEl = document.getElementById('lives');
+    const startModal = document.getElementById('startModal');
+    const gameOverModal = document.getElementById('gameOverModal');
+    const startButton = document.getElementById('startButton');
+    const restartButton = document.getElementById('restartButton');
+    const finalScoreEl = document.getElementById('finalScore');
+    const gameOverTitleEl = document.getElementById('gameOverTitle');
+    const moveLeftButton = document.getElementById('moveLeftButton');
+    const moveRightButton = document.getElementById('moveRightButton');
+    const shootButton = document.getElementById('shootButton');
+    const touchInstructions = document.querySelector('.touch-instructions');
+    const keyboardInstructions = document.querySelector('.keyboard-instructions');
+
+    // --- Game Configuration ---
+    let canvasWidth = 800;
+    let canvasHeight = 600;
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
+
+    let score = 0;
+    let lives = 3;
+    let gameRunning = false;
+    let animationFrameId;
+
+    // --- Player ---
+    const player = {
+        x: canvas.width / 2 - 25,
+        y: canvas.height - 60,
+        width: 50,
+        height: 30,
+        speed: 7,
+        dx: 0,
+        draw() {
+            ctx.fillStyle = '#33ff33';
+            ctx.beginPath();
+            ctx.moveTo(this.x + this.width / 2, this.y);
+            ctx.lineTo(this.x, this.y + this.height);
+            ctx.lineTo(this.x + this.width, this.y + this.height);
+            ctx.closePath();
+            ctx.fill();
+            ctx.shadowColor = '#33ff33';
+            ctx.shadowBlur = 10;
+        },
+        update() {
+            this.x += this.dx;
+            if (this.x < 0) this.x = 0;
+            if (this.x + this.width > canvas.width) this.x = canvas.width - this.width;
+        }
+    };
+
+    // --- Projectiles ---
+    const projectiles = [];
+    const enemyProjectiles = [];
+    const projectileSpeed = 10;
+    const enemyProjectileSpeed = 5;
+    let canShoot = true;
+
+    function createProjectile(x, y, color, speed, isEnemy = false) {
+        const list = isEnemy ? enemyProjectiles : projectiles;
+        list.push({
+            x, y, width: 5, height: 15, color, speed, isEnemy,
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.shadowColor = this.color;
+                ctx.shadowBlur = 15;
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+            },
+            update() { this.y += this.isEnemy ? this.speed : -this.speed; }
+        });
+    }
+
+    // --- Enemies ---
+    const enemies = [];
+    const enemyRows = 4;
+    const enemyCols = 8;
+    const enemyWidth = 40;
+    const enemyHeight = 30;
+    const enemyPadding = 15;
+    const enemyOffsetTop = 50;
+    const enemyOffsetLeft = 60;
+    let enemyDirection = 1;
+    let enemySpeed = 1;
+    let enemyMoveDown = 20;
+
+    function createEnemies() {
+        enemies.length = 0;
+        for (let r = 0; r < enemyRows; r++) {
+            for (let c = 0; c < enemyCols; c++) {
+                enemies.push({
+                    x: c * (enemyWidth + enemyPadding) + enemyOffsetLeft,
+                    y: r * (enemyHeight + enemyPadding) + enemyOffsetTop,
+                    width: enemyWidth, height: enemyHeight,
+                    draw() {
+                        ctx.fillStyle = 'hsl(' + (this.y % 360) + ', 80%, 50%)';
+                        ctx.shadowColor = 'hsl(' + (this.y % 360) + ', 80%, 50%)';
+                        ctx.shadowBlur = 10;
+                        ctx.fillRect(this.x, this.y, this.width, this.height);
+                        ctx.fillStyle = '#000';
+                        ctx.fillRect(this.x + 8, this.y + 10, 5, 5);
+                        ctx.fillRect(this.x + 27, this.y + 10, 5, 5);
+                    }
+                });
+            }
+        }
+    }
+
+    // --- AI for Enemy Shooting ---
+    const enemyShootInterval = 1000;
+    let lastEnemyShot = 0;
+
+    function enemyAI() {
+        if (Date.now() - lastEnemyShot > enemyShootInterval && enemies.length > 0) {
+            const shooters = enemies.filter(enemy => !enemies.some(other => other !== enemy && other.x < enemy.x + enemy.width && other.x + other.width > enemy.x && other.y > enemy.y));
+            if (shooters.length > 0) {
+                let targetEnemy = shooters[Math.floor(Math.random() * shooters.length)];
+                if (Math.random() < 0.5) {
+                    const bestShooter = shooters.reduce((best, shooter) => {
+                        const distance = Math.abs((shooter.x + shooter.width / 2) - (player.x + player.width / 2));
+                        return distance < best.distance ? { shooter, distance } : best;
+                    }, { shooter: null, distance: Infinity });
+                    if (bestShooter.shooter) targetEnemy = bestShooter.shooter;
+                }
+                createProjectile(targetEnemy.x + targetEnemy.width / 2 - 2.5, targetEnemy.y + targetEnemy.height, '#ff3333', enemyProjectileSpeed, true);
+                lastEnemyShot = Date.now();
+            }
+        }
+    }
+
+    // --- Particles for Explosions ---
+    const particles = [];
+    function createParticle(x, y, color) {
+        for (let i = 0; i < 15; i++) {
+            particles.push({
+                x, y, color,
+                radius: Math.random() * 3 + 1,
+                vx: (Math.random() - 0.5) * 5,
+                vy: (Math.random() - 0.5) * 5,
+                alpha: 1,
+                update() { this.x += this.vx; this.y += this.vy; this.alpha -= 0.05; },
+                draw() {
+                    ctx.save();
+                    ctx.globalAlpha = this.alpha;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = this.color;
+                    ctx.fill();
+                    ctx.restore();
+                }
+            });
+        }
+    }
+
+    // --- Game Loop ---
+    function update() {
+        if (!gameRunning) return;
+        ctx.shadowBlur = 0;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        player.update();
+        player.draw();
+        projectiles.forEach((p, i) => { p.update(); p.draw(); if (p.y < 0) projectiles.splice(i, 1); });
+        enemyProjectiles.forEach((p, i) => { p.update(); p.draw(); if (p.y > canvas.height) enemyProjectiles.splice(i, 1); });
+        
+        let moveDown = false;
+        enemies.forEach(enemy => {
+            enemy.x += enemySpeed * enemyDirection;
+            if (enemy.x + enemy.width > canvas.width || enemy.x < 0) moveDown = true;
+        });
+        if (moveDown) {
+            enemyDirection *= -1;
+            enemies.forEach(enemy => enemy.y += enemyMoveDown);
+        }
+        enemies.forEach(enemy => enemy.draw());
+        
+        enemyAI();
+        particles.forEach((p, i) => { p.update(); p.draw(); if (p.alpha <= 0) particles.splice(i, 1); });
+        handleCollisions();
+
+        if (enemies.length === 0) winLevel();
+        if (lives <= 0 || enemies.some(e => e.y + e.height > player.y)) endGame();
+        
+        animationFrameId = requestAnimationFrame(update);
+    }
+
+    function handleCollisions() {
+        projectiles.forEach((proj, projIndex) => {
+            enemies.forEach((enemy, enemyIndex) => {
+                if (proj.x < enemy.x + enemy.width && proj.x + proj.width > enemy.x && proj.y < enemy.y + enemy.height && proj.y + proj.height > enemy.y) {
+                    createParticle(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 'hsl(' + (enemy.y % 360) + ', 80%, 50%)');
+                    enemies.splice(enemyIndex, 1);
+                    projectiles.splice(projIndex, 1);
+                    score += 100;
+                    updateUI();
+                }
+            });
+        });
+        enemyProjectiles.forEach((proj, projIndex) => {
+            if (proj.x < player.x + player.width && proj.x + proj.width > player.x && proj.y < player.y + player.height && proj.y + proj.height > player.y) {
+                createParticle(player.x + player.width / 2, player.y + player.height / 2, '#33ff33');
+                enemyProjectiles.splice(projIndex, 1);
+                lives--;
+                updateUI();
+                player.x = canvas.width / 2 - player.width / 2;
+            }
+        });
+    }
+
+    // --- UI & Game State Functions ---
+    function updateUI() {
+        scoreEl.textContent = `SCORE: ${score}`;
+        livesEl.textContent = `LIVES: ${lives}`;
+    }
+
+    function winLevel() {
+        enemySpeed += 0.5;
+        createEnemies();
+    }
+
+    function startGame() {
+        score = 0; lives = 3; enemySpeed = 1;
+        player.x = canvas.width / 2 - player.width / 2;
+        projectiles.length = 0; enemyProjectiles.length = 0; particles.length = 0;
+        createEnemies();
+        updateUI();
+        startModal.style.display = 'none';
+        gameOverModal.style.display = 'none';
+        gameRunning = true;
+        update();
+    }
+
+    function endGame() {
+        gameRunning = false;
+        cancelAnimationFrame(animationFrameId);
+        finalScoreEl.textContent = score;
+        gameOverModal.style.display = 'flex';
+    }
+
+    // --- Event Listeners ---
+    function playerShoot() {
+        if (!gameRunning || !canShoot) return;
+        createProjectile(player.x + player.width / 2 - 2.5, player.y, '#33ffcc', projectileSpeed);
+        canShoot = false;
+        setTimeout(() => canShoot = true, 300);
+    }
+
+    document.addEventListener('keydown', e => {
+        if (!gameRunning) return;
+        if (e.key === 'ArrowRight' || e.key === 'd') player.dx = player.speed;
+        else if (e.key === 'ArrowLeft' || e.key === 'a') player.dx = -player.speed;
+        else if (e.key === ' ') playerShoot();
+    });
+    document.addEventListener('keyup', e => {
+        if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'ArrowLeft' || e.key === 'a') player.dx = 0;
+    });
+    
+    // Touch & Mouse Listeners for On-Screen Buttons
+    ['mousedown', 'touchstart'].forEach(evt => {
+        moveLeftButton.addEventListener(evt, e => { e.preventDefault(); if (gameRunning) player.dx = -player.speed; });
+        moveRightButton.addEventListener(evt, e => { e.preventDefault(); if (gameRunning) player.dx = player.speed; });
+        shootButton.addEventListener(evt, e => { e.preventDefault(); playerShoot(); });
+    });
+    ['mouseup', 'mouseleave', 'touchend'].forEach(evt => {
+        moveLeftButton.addEventListener(evt, e => { e.preventDefault(); if (gameRunning) player.dx = 0; });
+        moveRightButton.addEventListener(evt, e => { e.preventDefault(); if (gameRunning) player.dx = 0; });
+    });
+
+    startButton.addEventListener('click', startGame);
+    restartButton.addEventListener('click', startGame);
+    
+    // --- Responsive Canvas ---
+    function resizeCanvas() {
+        const infoBarHeight = document.getElementById('info-bar').offsetHeight;
+        const controlsHeight = 120; // Estimated height for mobile controls area
+        const availableWidth = window.innerWidth;
+        const availableHeight = window.innerHeight - infoBarHeight - controlsHeight;
+        
+        const scale = Math.min(availableWidth / canvasWidth, availableHeight / canvasHeight, 1);
+        
+        canvas.style.width = `${canvasWidth * scale}px`;
+        canvas.style.height = `${canvasHeight * scale}px`;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    window.onload = resizeCanvas;
+</script>
+
+</body>
+</html>
